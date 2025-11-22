@@ -8,7 +8,7 @@ AutomaticIrrigationDevice::AutomaticIrrigationDevice(
   int echoPin
 ) : dht22Sensor(dht22Pin, this),
     relayActuator(relayPin, false, this),
-    ultrasonicSensor(trigPin, echoPin, TANK_HEIGHT_CM, TANK_AREA_CM2, this),
+    ultrasonicSensor(trigPin, echoPin, INITIAL_TANK_HEIGHT, INITIAL_TANK_VOLUME, this),
     comm(communication)
 {}
 
@@ -29,7 +29,7 @@ void AutomaticIrrigationDevice::handle(Command command) {
 
 void AutomaticIrrigationDevice::handleVolumeChange() {
   float volume = ultrasonicSensor.getVolume();
-  float volumePercent = (volume / TANK_TOTAL_VOLUME_LITERS) * 100.0;
+  float volumePercent = (volume / tankVolume) * 100.0;
 
   Serial.printf("Volumen actualizado: %.2fL (%.1f%%)\n", volume, volumePercent);
 
@@ -47,7 +47,7 @@ void AutomaticIrrigationDevice::handleEnvironmentalChange() {
   float temperature = dht22Sensor.getTemperature();
   float humidity = dht22Sensor.getHumidity();
   float volume = ultrasonicSensor.getVolume();
-  float volumePercent = (volume / TANK_TOTAL_VOLUME_LITERS) * 100.0;
+  float volumePercent = (volume / tankVolume) * 100.0;
 
   Serial.printf("Lectura ambiental -> Temp: %.2f°C | Hum: %.2f%% | Vol: %.2fL (%.1f%%)\n",
                 temperature, humidity, volume, volumePercent);
@@ -71,6 +71,20 @@ void AutomaticIrrigationDevice::updateSensors() {
   ultrasonicSensor.updateData();
 }
 
+void AutomaticIrrigationDevice::setTankParameters(float newHeight, float newVolume) {
+  if (tankHeight != newHeight) {
+    ultrasonicSensor.setTankHeight(newHeight);
+    tankHeight = newHeight;
+  }
+  if (tankVolume != newVolume) {
+    ultrasonicSensor.setTankVolume(newVolume);
+    tankVolume = newVolume;
+  } 
+  if (tankHeight != newHeight || tankVolume != newVolume) {
+    AutomaticIrrigationDevice::handleVolumeChange();
+  }
+}
+
 void AutomaticIrrigationDevice::connectEdge() {
   if (comm && comm->isConnected()) {
     // Recibimiento de datos
@@ -89,6 +103,16 @@ void AutomaticIrrigationDevice::connectEdge() {
           humidityThreshold = config["humidity_min"].as<float>();
           Serial.printf("Nuevo límite humedad: %.2f%%\n", humidityThreshold);
           AutomaticIrrigationDevice::handleEnvironmentalChange();
+        }
+        if (config.containsKey("max_volume")) {
+          float newVolume = config["max_volume"].as<float>();
+          Serial.printf("Nueva capacidad del tanque: %.2f%%\n", tankVolume);
+          AutomaticIrrigationDevice::setTankParameters(newVolume, tankHeight);
+        }
+        if (config.containsKey("tank_height")) {
+          float newTankHeight = config["tank_height"].as<float>();
+          Serial.printf("Nueva altura del tanque: %.2f%%\n", tankHeight);
+          AutomaticIrrigationDevice::setTankParameters(tankVolume, newTankHeight);
         }
       } else {
         Serial.println("Error al parsear JSON recibido.");

@@ -19,14 +19,14 @@ private:
   UltrasonicSensor ultrasonicSensor;
   ICommunication* comm; // Comunicación (WiFiManager, MQTTManager u otra);
 
+  static constexpr float INITIAL_TANK_VOLUME = 100.0;
+  static constexpr float INITIAL_TANK_HEIGHT = 100.0;
+  static constexpr float TANK_MIN_VOLUME_THRESHOLD = 5.0; // %
   float temperatureThreshold = 30.0; // °C
   float humidityThreshold = 25.0;    // %
-  static constexpr float TANK_MIN_VOLUME_THRESHOLD = 5.0; // %
-  static constexpr float TANK_HEIGHT_CM = 100.0;       // cm
-  static constexpr float TANK_AREA_CM2 = 1000.0;       // cm²
-  static constexpr float TANK_TOTAL_VOLUME_LITERS = (TANK_HEIGHT_CM * TANK_AREA_CM2) / 1000.0;
-  float calculateTankVolumePercent(float distanceCm);
-
+  float tankVolume = INITIAL_TANK_VOLUME; // L
+  float tankHeight = INITIAL_TANK_HEIGHT; // cm
+  
 public:
   static const int DHT22_PIN = 18;
   static const int RELAY_PIN = 19;
@@ -45,10 +45,11 @@ public:
   void handle(Command command) override;
   void handleVolumeChange();
   void handleEnvironmentalChange();
+  void setTankParameters(float newHeight, float newVolume);
 
   void updateSensors();
   void connectEdge();
-
+  
   DHT22Sensor& getDHT();
   RelayActuator& getRelay();
   UltrasonicSensor& getUltrasonic();
