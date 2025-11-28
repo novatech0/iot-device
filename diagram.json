@@ -9,7 +9,7 @@
       "id": "dht1",
       "top": -18.9,
       "left": -101.4,
-      "attrs": { "humidity": "47.5", "temperature": "23.9" }
+      "attrs": { "humidity": "47.5", "temperature": "18.3" }
     },
     {
       "type": "wokwi-hc-sr04",
@@ -17,7 +17,7 @@
       "top": 35.3,
       "left": -574.1,
       "rotate": 270,
-      "attrs": { "distance": "88" }
+      "attrs": { "distance": "66" }
     },
     {
       "type": "wokwi-relay-module",

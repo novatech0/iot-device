@@ -19,6 +19,7 @@ private:
   UltrasonicSensor ultrasonicSensor;
   ICommunication* comm; // Comunicación (WiFiManager, MQTTManager u otra);
 
+  static constexpr int CROP_ID = 1;
   static constexpr float INITIAL_TANK_VOLUME = 100.0;
   static constexpr float INITIAL_TANK_HEIGHT = 100.0;
   static constexpr float TANK_MIN_VOLUME_THRESHOLD = 5.0; // %
@@ -46,6 +47,8 @@ public:
   void handleVolumeChange();
   void handleEnvironmentalChange();
   void setTankParameters(float newHeight, float newVolume);
+  void setTemperatureThreshold(float newTemperatureThreshold);
+  void setHumidityThreshold(float newHumidityThreshold);
 
   void updateSensors();
   void connectEdge();

@@ -73,15 +73,32 @@ void AutomaticIrrigationDevice::updateSensors() {
 
 void AutomaticIrrigationDevice::setTankParameters(float newHeight, float newVolume) {
   if (tankHeight != newHeight) {
+    Serial.printf("Nueva altura del tanque: %.2fcm\n", tankHeight);
     ultrasonicSensor.setTankHeight(newHeight);
     tankHeight = newHeight;
   }
   if (tankVolume != newVolume) {
+    Serial.printf("Nueva capacidad máxima del tanque: %.2fL\n", tankVolume);
     ultrasonicSensor.setTankVolume(newVolume);
     tankVolume = newVolume;
   } 
   if (tankHeight != newHeight || tankVolume != newVolume) {
     AutomaticIrrigationDevice::handleVolumeChange();
+  }
+}
+
+void AutomaticIrrigationDevice::setTemperatureThreshold(float newTemperatureThreshold) {
+  if (temperatureThreshold != newTemperatureThreshold) {
+    temperatureThreshold = newTemperatureThreshold;
+    Serial.printf("Nuevo límite temperatura: %.2f°C\n", temperatureThreshold);
+    AutomaticIrrigationDevice::handleEnvironmentalChange();
+  }
+}
+void AutomaticIrrigationDevice::setHumidityThreshold(float newHumidityThreshold) {
+  if (humidityThreshold != newHumidityThreshold) {
+    humidityThreshold = newHumidityThreshold;
+    Serial.printf("Nuevo límite humedad: %.2f%%\n", humidityThreshold);
+    AutomaticIrrigationDevice::handleEnvironmentalChange();
   }
 }
 
@@ -94,25 +111,26 @@ void AutomaticIrrigationDevice::connectEdge() {
       DeserializationError err = deserializeJson(config, incoming);
 
       if (!err) {
-        if (config.containsKey("temperature_max")) {
-          temperatureThreshold = config["temperature_max"].as<float>();
-          Serial.printf("Nuevo límite temperatura: %.2f°C\n", temperatureThreshold);
-          AutomaticIrrigationDevice::handleEnvironmentalChange();
-        }
-        if (config.containsKey("humidity_min")) {
-          humidityThreshold = config["humidity_min"].as<float>();
-          Serial.printf("Nuevo límite humedad: %.2f%%\n", humidityThreshold);
-          AutomaticIrrigationDevice::handleEnvironmentalChange();
-        }
-        if (config.containsKey("max_volume")) {
-          float newVolume = config["max_volume"].as<float>();
-          Serial.printf("Nueva capacidad del tanque: %.2f%%\n", tankVolume);
-          AutomaticIrrigationDevice::setTankParameters(newVolume, tankHeight);
-        }
-        if (config.containsKey("tank_height")) {
-          float newTankHeight = config["tank_height"].as<float>();
-          Serial.printf("Nueva altura del tanque: %.2f%%\n", tankHeight);
-          AutomaticIrrigationDevice::setTankParameters(tankVolume, newTankHeight);
+        if (config.containsKey("id")) {
+          int id = config["id"].as<int>();
+          if (id == CROP_ID) {
+            if (config.containsKey("temperature_max")) {
+              float newTemperatureThreshold = config["temperature_max"].as<float>();
+              AutomaticIrrigationDevice::setTemperatureThreshold(newTemperatureThreshold);
+            }
+            if (config.containsKey("humidity_min")) {
+              float newHumidityThreshold = config["humidity_min"].as<float>();
+              AutomaticIrrigationDevice::setHumidityThreshold(newHumidityThreshold);
+            }
+            if (config.containsKey("max_volume")) {
+              float newVolume = config["max_volume"].as<float>();
+              AutomaticIrrigationDevice::setTankParameters(tankHeight, newVolume);
+            }
+            if (config.containsKey("tank_height")) {
+              float newTankHeight = config["tank_height"].as<float>();
+              AutomaticIrrigationDevice::setTankParameters(newTankHeight, tankVolume);
+            }
+          }
         }
       } else {
         Serial.println("Error al parsear JSON recibido.");
@@ -126,6 +144,7 @@ void AutomaticIrrigationDevice::connectEdge() {
 
     JsonDocument data;
     data["sender"] = "device";
+    data["id"] = CROP_ID;
     data["temperature"] = temp;
     data["humidity"] = hum;
     data["volume"] = volume;
